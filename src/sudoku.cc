@@ -165,7 +165,7 @@ bool Sudoku::judgeCol(unsigned short row) {
 bool Sudoku::judgeWin() {
     for (unsigned short i = 0; i < 9; ++i) {
         for (unsigned short j = 0; j < 9; ++j)
-            if (this->numberMap[i][j] != 0)
+            if (this->numberMap[i][j] == 0)
                 return false;
     }
 
@@ -183,22 +183,22 @@ bool Sudoku::_reaction() {
         for (i = 0; i < 9; ++i) {
             for (j = 0; j < 9; ++j) {
                 // there is no number in this location
-                if (this->numberMap[i][j] == 0)
+                if (this->numberMap[i][j] != 0)
+                    continue;
                 for (k = 1; k < 10; k++) {
                     this->numberMap[i][j] = k;
                     if (judgeCol(i) && judgeRow(j) && judgeBck(i, j))
-                        _reaction();
+                        return _reaction();
                     else 
                         this->numberMap[i][j] = 0;
-
-                    // loop and reset
-                    this->numberMap[i][j] = 0;
                 }
+                
+                this->numberMap[i][j] = 0;
 
-                // return false;
             }
         }
-        return false;
+        if (this->judgeWin())
+            return true;
     }
     return false;
 }
