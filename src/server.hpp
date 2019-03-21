@@ -1,48 +1,39 @@
 #ifndef _SERVER_HPP_
 #define _SERVER_HPP_
 
-#include "unp.hpp"
-#include <utility>
-#include <string>
-#include "sudoku.hpp"
+#include "codec.hpp"
 
-class Server {
+#include <muduo/base/Logging.h>
+#include <muduo/base/Mutex.h>
+#include <muduo/net/EventLoop.h>
+#include <muduo/net/TcpServer.h>
 
-public:
-    Server();
-    Server(int domain, int type);
-    ~Server();
+#include <set>
+#include <stdio.h>
+#include <unistd.h>
 
-    void setAddr(const struct sockaddr_in &addr);
+using namespace muduo;
+using namespace muduo::net;
 
-    bool Socket(int domain, int type, int protocol);
+class SudukuServer : noncopyable 
+{
+    public:
+    SudukuServer(EventLoop* loop,
+                const InetAddress& listenAddr);
 
-    bool Bind();
-    
-    bool Listen(int backlog = LISTENQ);
-
-    void loop();
-
-    bool Accept();
-
-    ssize_t Send(int sockfd, const char *buf, size_t len, int flags = 0);
-
-    int Recv(int sockfd, char *buf, int len, int flags = 0);  
-
-    int Close(int fd);
+    void start();
 
 private:
+    void onConnection(const TcpConnectionPtr& conn);
 
-    int domain;
-    int type;
+    void onStringMessage(const TcpConnectionPtr&,
+                        const string& message,
+                        Timestamp);
 
-    int sockfd;
-    int connfd;
-
-    sockaddr_in     addr4;  // Ipv4
-    sockaddr_in6    addr6;  // Ipv6
-
-    char buffer[MAXLINE];
+    typedef std::set<TcpConnectionPtr> ConnectionList;
+    TcpServer server_;
+    LengthHeaderCodec codec_;
+    ConnectionList connections_;
 };
 
 #endif  // _SERVER_HPP_
