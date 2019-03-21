@@ -1,83 +1,93 @@
 #include "server.hpp"
-#include <iostream>
-#include <stdexcept>
+#include "codec.hpp"
+#include "sudoku.hpp"
+#include <array>
+#include <string>
+#include <utility>
 
+using namespace muduo;
+using namespace muduo::net;
 using namespace std;
 
-Server::Server() : domain(AF_INET), type(SOCK_STREAM) { 
-    bzero(&this->addr4, sizeof(addr4));
-    bzero(&this->addr6, sizeof(addr6));
+SudukuServer::SudukuServer(EventLoop* loop,
+                const InetAddress& listenAddr)
+: server_(loop, listenAddr, "ChatServer"),
+codec_(std::bind(&SudukuServer::onStringMessage, this, _1, _2, _3)) {
+    server_.setConnectionCallback(
+        std::bind(&SudukuServer::onConnection, this, _1)
+    );
+
+    server_.setMessageCallback(
+        std::bind(&LengthHeaderCodec::onMessage, &codec_, _1, _2, _3)
+    );
 }
 
-Server::Server(int doamin, int type) : domain(doamin), type(type) {
-    bzero(&this->addr4, sizeof(addr4));
-    bzero(&this->addr6, sizeof(addr6));
+void SudukuServer::start() {
+    server_.start();
 }
 
-Server::~Server() {
-    try {
-        close(sockfd);
-    } catch (exception ex) {
-        cerr << ex.what() << endl;
+void SudukuServer::onConnection(const TcpConnectionPtr& conn) {
+
+    LOG_INFO << conn->localAddress().toIpPort() << " -> "
+             << conn->peerAddress().toIpPort() << " is "
+             << (conn->connected() ? "UP" : "DOWN");
+
+    if (conn->connected())
+        connections_.insert(conn);
+    else
+        connections_.erase(conn);
+}
+
+void SudukuServer::onStringMessage(const TcpConnectionPtr&,
+                        const string& message,
+                        Timestamp) {
+/*  
+    for (ConnectionList::iterator it = connections_.begin();
+        it != connections_.end();
+        ++it)
+        codec_.send(get_pointer(*it), message);
+*/
+    // logic
+
+    string tsp(message);
+    size_t len = tsp.size();
+
+    array<array<unsigned short, 9>, 9> temp;
+    array<unsigned short, 9> ttemp;
+    unsigned short value, i, j;
+
+    string error("This is a error chess!");
+    if (len != 81) {
+        for (ConnectionList::iterator it = connections_.begin();
+            it != connections_.end();
+            ++it)
+            codec_.send(get_pointer(*it), error);
     }
-}
-
-bool Server::Socket(int domain, int type, int protocol) {
-    this->sockfd = socket(domain, type, 0);
-    if (this->sockfd < 0) {
-        throw range_error("error info!");
-        return false;
+    else {
+        for (i = 0; i < 9; ++i) {
+            for (j = 0; j < 9; ++j) {
+                // array<unsigned short, 9> ttemp;
+                ttemp[j] = static_cast<unsigned short>(tsp[i*9 + j] - '0');
+            }
+            temp[i] = ttemp;
+        }
+        Sudoku sudoku(temp);
+        bool result = sudoku.reaction();
+        if (result) {
+            string win("There is a goog answer");
+            for (ConnectionList::iterator it = connections_.begin();
+            it != connections_.end();
+            ++it)
+            codec_.send(get_pointer(*it), win);
+        }
+        else {
+            string fail("There is no answer");
+            for (ConnectionList::iterator it = connections_.begin();
+            it != connections_.end();
+            ++it)
+            codec_.send(get_pointer(*it), fail);
+        }
     }
-    else 
-        return true;
-}
+    // Sudoku sudoku();
 
-void Server::setAddr(const struct sockaddr_in &addr) {
-    // IPv4
-
-    domain = addr.sin_family;
-
-    if (domain == AF_INET) {
-        addr4.sin_family            = AF_INET;
-        addr4.sin_port              = addr.sin_port;
-        addr4.sin_addr.s_addr       = addr.sin_addr.s_addr;
-    }
-    // else if (domain == AF_INET6) {
-    //     addr6.sin6_family = AF_INET;
-    //     addr6.sin6_port = addr.sin_port;
-    //     addr6.sin6_addr.__in6_u = addr.sin_addr.s_addr;
-    // }
-}
-
-bool Server::Bind() {
-    // IPv4
-    if (domain == AF_INET) {
-        if (bind(sockfd, (SA *)&addr4, sizeof(addr4)) < 0)
-            return false;
-        else return true;
-    }
-    // only IPv4
-    else 
-        return false;
-}
-
-bool Server::Listen(int backlog) {
-    if (listen(this->sockfd, backlog) < 0)
-        return false;
-    else return true;
-}
-
-void Server::loop() {
-    while (true);
-}
-
-bool Server::Accept() {
-    try {
-        this->connfd = accept(sockfd, (SA*)nullptr, nullptr);
-    } catch (exception ex) {
-        cerr << ex.what() << endl;
-        return false;
-    }
-
-    return true;
 }
