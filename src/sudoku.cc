@@ -8,6 +8,7 @@ using std::cerr;
 using std::endl;
 using std::initializer_list;
 using std::array;
+using std::cout;
 
 Sudoku::Sudoku(const int map[9][9]) : flag(false), numberMap({0}) {
 
@@ -61,7 +62,13 @@ Sudoku::~Sudoku() {
 
 bool Sudoku::reaction() {
 
-    this->flag = this->_reaction();
+    // this->flag = this->_reaction();
+    Answer answer;
+    answer.setMap(this->numberMap);
+    this-> flag = answer.getAnswer();
+    if (flag) 
+        this->_answer = answer.getMap();
+
     return this->flag;
 
 }
@@ -177,28 +184,44 @@ bool Sudoku::_reaction() {
 
     unsigned short i, j, k;
 
-    if (this->judgeWin())
+    if (this->judgeWin()) {
+        this->flag = true;
         return true;
+    }
     else {
         for (i = 0; i < 9; ++i) {
             for (j = 0; j < 9; ++j) {
                 // there is no number in this location
                 if (this->numberMap[i][j] != 0)
                     continue;
-                for (k = 1; k < 10; k++) {
-                    this->numberMap[i][j] = k;
-                    if (judgeCol(i) && judgeRow(j) && judgeBck(i, j))
-                        return _reaction();
-                    else 
-                        this->numberMap[i][j] = 0;
+                else {
+                    for (k = 1; k < 10; k++) {
+                        this->numberMap[i][j] = k;
+                        if (judgeCol(i) && judgeRow(j) && judgeBck(i, j)) {
+                            return _reaction();
+                        }
+                        else {
+                            this->numberMap[i][j] = 0;
+                            continue;
+                        }
+                        // loop and reset
+                    }
+                    this->numberMap[i][j] = 0;
                 }
-                
-                this->numberMap[i][j] = 0;
 
+                // return false;
             }
         }
-        if (this->judgeWin())
+        if (this->judgeWin()) {
+            this->flag = true;
             return true;
+        }
+
+        else return flag;
     }
-    return false;
+
+    if (i >= 9 && j >= 9) {
+        this->flag = true;
+        return true;
+    }
 }
