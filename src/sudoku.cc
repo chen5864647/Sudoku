@@ -12,8 +12,8 @@ using std::cout;
 
 Sudoku::Sudoku(const int map[9][9]) : flag(false), numberMap({0}) {
 
-    for (unsigned short i = 0; i < 9; ++i) 
-        for (unsigned short j = 0; j < 9; ++j)
+    for (VALUE i = 0; i < 9; ++i) 
+        for (VALUE j = 0; j < 9; ++j)
             this->numberMap[i][j] = map[i][j];
 
     time(&start);
@@ -60,6 +60,12 @@ Sudoku::~Sudoku() {
         cerr << "This is no answer!" << endl;
 }
 
+array<array<VALUE, 9>, 9> Sudoku::getMap() const {
+    return this->_answer;
+}
+
+
+
 bool Sudoku::reaction() {
 
     // this->flag = this->_reaction();
@@ -73,6 +79,7 @@ bool Sudoku::reaction() {
 
 }
 
+/*
 bool Sudoku::judgeRow(unsigned short col) {
     unsigned short i, j;
     for (i = 0; i < 9; ++i) 
@@ -198,7 +205,103 @@ bool Sudoku::_reaction() {
                     for (k = 1; k < 10; k++) {
                         this->numberMap[i][j] = k;
                         if (judgeCol(i) && judgeRow(j) && judgeBck(i, j)) {
-                            return _reaction();
+                            return _reaction();#include "sudoku.hpp"
+2
+#include <iterator>
+3
+#include <iostream>
+4
+#include <stdexcept>
+5
+#include <exception>
+6
+​
+7
+using std::cerr;
+8
+using std::endl;
+9
+using std::initializer_list;
+10
+using std::array;
+11
+using std::cout;
+12
+​
+13
+Sudoku::Sudoku(const int map[9][9]) : flag(false), numberMap({0}) {
+14
+​
+15
+    for (unsigned short i = 0; i < 9; ++i) 
+16
+        for (unsigned short j = 0; j < 9; ++j)
+17
+            this->numberMap[i][j] = map[i][j];
+18
+​
+19
+    time(&start);
+20
+​
+21
+}
+22
+​
+23
+Sudoku::Sudoku(const Sudoku &rhs)
+24
+: numberMap(rhs.numberMap), flag(false) {
+25
+    time(&start);
+26
+​
+27
+}
+28
+​
+29
+Sudoku::Sudoku(const array<array<unsigned short, 9>, 9> numberMap) 
+30
+: numberMap(numberMap), flag(false) { 
+31
+    time(&start);
+32
+​
+33
+}
+34
+​
+35
+Sudoku::Sudoku(const std::initializer_list<unsigned short> numberMap) : numberMap({0}) {
+36
+    unsigned short len = numberMap.size();
+37
+    if (len != 81) {
+38
+        cerr << "This map is not correct!" << endl;
+39
+        throw "Constrution Error";
+40
+    } else {
+41
+        auto item = numberMap.begin();
+42
+        for (unsigned short i = 0; i < 9; ++i) {
+43
+​
+44
+            for (unsigned short j = 0; j < 9; ++j) 
+45
+                this->numberMap[i][j] = *item++;
+46
+            // this->numberMap.emplace_back(vec);
+47
+        }
+48
+    }
+49
+
                         }
                         else {
                             this->numberMap[i][j] = 0;
@@ -225,3 +328,4 @@ bool Sudoku::_reaction() {
         return true;
     }
 }
+*/
